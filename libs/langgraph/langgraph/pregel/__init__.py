@@ -62,6 +62,7 @@ from langgraph.checkpoint.base import (
     copy_checkpoint,
     empty_checkpoint,
 )
+from langgraph.checkpoint.id import uuid6
 from langgraph.constants import (
     CONFIG_KEY_CHECKPOINTER,
     CONFIG_KEY_READ,
@@ -183,6 +184,32 @@ class Channel:
                 for k, v in kwargs.items()
             ]
         )
+
+
+def get_nodes(
+    nodes: Mapping[str, PregelNode], path: list[str]
+) -> Mapping[str, PregelNode]:
+    nodes_to_visit = list(path)
+    all_nodes = nodes
+    while nodes_to_visit:
+        next_node_name = nodes_to_visit.pop(0)
+        if next_node_name not in all_nodes:
+            # TODO: is there a better way to phrase this?
+            raise ValueError(
+                f"Couldn't find node '{next_node_name}'. "
+                f"This is likely because you have nodes that contain reserved character ':'."
+            )
+
+        next_node = all_nodes[next_node_name].get_node()
+
+        if not isinstance(next_node, RunnableSequence):
+            break
+
+        first_step = next_node.steps[0]
+        if isinstance(first_step, Pregel):
+            all_nodes = first_step.nodes
+
+    return all_nodes
 
 
 class Pregel(
@@ -514,6 +541,47 @@ class Pregel(
         if not self.checkpointer:
             raise ValueError("No checkpointer set")
 
+        if isinstance(as_node, str) and ":" in as_node:
+            *path, as_node = as_node.split(":")
+            full_nodes = get_nodes(self.nodes, path)
+
+            # TODO: rewrite this - this would need to be a loop for all parent nodes on the path
+            parent_saved = self.checkpointer.get_tuple(config)
+            step = parent_saved.metadata.get("step", -2) + 1 if parent_saved else -1
+            # make sure checkpoint ID is the same
+            id = str(uuid6(clock_seq=step))
+            parent_checkpoint = {**parent_saved.checkpoint, "step": step, "id": id}
+
+            parent_checkpoint_config = config
+            if parent_saved:
+                parent_checkpoint_config = {
+                    "configurable": {
+                        **config.get("configurable", {}),
+                        **parent_saved.config["configurable"],
+                    }
+                }
+
+            # write update for parent
+            self.checkpointer.put(
+                parent_checkpoint_config,
+                parent_checkpoint,
+                {
+                    "source": "update",
+                    "step": step,
+                },
+            )
+
+            # update child config
+            config = {
+                **config,
+                "configurable": {
+                    "thread_id": "-".join([config["configurable"]["thread_id"], *path])
+                },
+            }
+        else:
+            id = None
+            full_nodes = self.nodes
+
         # get last checkpoint
         saved = self.checkpointer.get_tuple(config)
         checkpoint = copy_checkpoint(saved.checkpoint) if saved else empty_checkpoint()
@@ -523,7 +591,7 @@ class Pregel(
         ):
             if (
                 isinstance(self.input_channels, str)
-                and self.input_channels in self.nodes
+                and self.input_channels in full_nodes
             ):
                 as_node = self.input_channels
         elif as_node is None:
@@ -540,12 +608,12 @@ class Pregel(
                     as_node = last_seen_by_node[-1][1]
         if as_node is None:
             raise InvalidUpdateError("Ambiguous update, specify as_node")
-        if as_node not in self.nodes:
+        if as_node not in full_nodes:
             raise InvalidUpdateError(f"Node {as_node} does not exist")
         # update channels
         with ChannelsManager(self.channels, checkpoint, config) as channels:
             # create task to run all writers of the chosen node
-            writers = self.nodes[as_node].get_writers()
+            writers = full_nodes[as_node].get_writers()
             if not writers:
                 raise InvalidUpdateError(f"Node {as_node} has no writers")
             task = PregelExecutableTask(
@@ -591,7 +659,7 @@ class Pregel(
 
             return self.checkpointer.put(
                 checkpoint_config,
-                create_checkpoint(checkpoint, channels, step),
+                create_checkpoint(checkpoint, channels, step, id=id),
                 {
                     "source": "update",
                     "step": step,

@@ -1,0 +1,98 @@
+# serializer version: 1
+# name: test_agent
+  '''
+  %%{init: {'flowchart': {'curve': 'linear'}}}%%
+  graph TD;
+  	__start__([__start__]):::first
+  	model(model)
+  	tools(tools)
+  	__end__([__end__]):::last
+  	__start__ --> model;
+  	tools --> model;
+  	model -.-> tools;
+  	model -.-> __end__;
+  	classDef default fill:#f2f0ff,line-height:1.2
+  	classDef first fill-opacity:0
+  	classDef last fill:#bfb6fc
+  
+  '''
+# ---
+# name: test_agent_always_tool
+  '''
+  %%{init: {'flowchart': {'curve': 'linear'}}}%%
+  graph TD;
+  	__start__([__start__]):::first
+  	first_model(first_model)
+  	model(model)
+  	tools(tools)
+  	__end__([__end__]):::last
+  	__start__ --> first_model;
+  	first_model --> tools;
+  	tools --> model;
+  	model -.-> tools;
+  	model -.-> __end__;
+  	classDef default fill:#f2f0ff,line-height:1.2
+  	classDef first fill-opacity:0
+  	classDef last fill:#bfb6fc
+  
+  '''
+# ---
+# name: test_agent_select_tools
+  '''
+  %%{init: {'flowchart': {'curve': 'linear'}}}%%
+  graph TD;
+  	__start__([__start__]):::first
+  	select_tools(select_tools)
+  	model(model)
+  	tools(tools)
+  	__end__([__end__]):::last
+  	__start__ --> select_tools;
+  	select_tools --> model;
+  	tools --> model;
+  	model -.-> tools;
+  	model -.-> __end__;
+  	classDef default fill:#f2f0ff,line-height:1.2
+  	classDef first fill-opacity:0
+  	classDef last fill:#bfb6fc
+  
+  '''
+# ---
+# name: test_chain
+  '''
+  %%{init: {'flowchart': {'curve': 'linear'}}}%%
+  graph TD;
+  	__start__([__start__]):::first
+  	generate_sql(generate_sql)
+  	explain_sql(explain_sql)
+  	__end__([__end__]):::last
+  	__start__ --> generate_sql;
+  	explain_sql --> __end__;
+  	generate_sql --> explain_sql;
+  	classDef default fill:#f2f0ff,line-height:1.2
+  	classDef first fill-opacity:0
+  	classDef last fill:#bfb6fc
+  
+  '''
+# ---
+# name: test_router
+  '''
+  %%{init: {'flowchart': {'curve': 'linear'}}}%%
+  graph TD;
+  	__start__([__start__]):::first
+  	router(router)
+  	retrieve_medical_records(retrieve_medical_records)
+  	retrieve_insurance_faqs(retrieve_insurance_faqs)
+  	generate_answer(generate_answer)
+  	__end__([__end__]):::last
+  	__start__ --> router;
+  	generate_answer --> __end__;
+  	retrieve_insurance_faqs --> generate_answer;
+  	retrieve_medical_records --> generate_answer;
+  	router -.-> retrieve_medical_records;
+  	router -.-> retrieve_insurance_faqs;
+  	classDef default fill:#f2f0ff,line-height:1.2
+  	classDef first fill-opacity:0
+  	classDef last fill:#bfb6fc
+  
+  '''
+# ---

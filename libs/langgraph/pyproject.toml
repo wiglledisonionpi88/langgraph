@@ -31,6 +31,9 @@ langgraph-checkpoint = {path = "../checkpoint", develop = true}
 langgraph-checkpoint-sqlite = {path = "../checkpoint-sqlite", develop = true}
 langgraph-checkpoint-postgres = {path = "../checkpoint-postgres", develop = true}
 psycopg = {extras = ["binary"], version = ">=3.0.0"}
+langchain-community = "^0.2.11"
+duckduckgo-search = "^6.2.6"
+
 
 [tool.ruff]
 lint.select = [ "E", "F", "I" ]

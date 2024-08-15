@@ -20,7 +20,7 @@ A super-step can be considered a single iteration over the graph nodes. Nodes th
 
 ### StateGraph
 
-The `StateGraph` class is the main graph class to uses. This is parameterized by a user defined `State` object.
+`StateGraph` is the main graph class for constructing workflows. It is parameterized by a user defined `State` object.
 
 ### MessageGraph
 
@@ -172,7 +172,7 @@ builder.add_node(my_node)
 
 ### `START` Node
 
-The `START` Node is a special node that represents the node sends user input to the graph. The main purpose for referencing this node is to determine which nodes should be called first.
+The `START` node initiates the graph execution and sends user input to the graph. The main purpose for referencing this node is to determine which nodes should be called first.
 
 ```python
 from langgraph.graph import START
@@ -182,7 +182,7 @@ graph.add_edge(START, "node_a")
 
 ### `END` Node
 
-The `END` Node is a special node that represents a terminal node. This node is referenced when you want to denote which edges have no actions after they are done.
+The `END` node represents a terminal node in the graph. This node is referenced when you want to denote which edges have no actions after they are done.
 
 ```
 from langgraph.graph import END

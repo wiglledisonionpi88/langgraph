@@ -306,23 +306,31 @@ files = [
 
 [[package]]
 name = "langchain-core"
-version = "0.3.0.dev1"
+version = "0.2.38"
 description = "Building applications with LLMs through composability"
 optional = false
-python-versions = "<4.0,>=3.9"
-files = [
-    {file = "langchain_core-0.3.0.dev1-py3-none-any.whl", hash = "sha256:d0c901a43a9a11815cc0c779e3b934b7f7f4456a866d762b5541fd7d2736dfe1"},
-    {file = "langchain_core-0.3.0.dev1.tar.gz", hash = "sha256:8e3b070592434b86676efcdcee0070e4297df756998964315e0cc591ef463ffc"},
-]
+python-versions = ">=3.9,<4.0"
+files = []
+develop = false
 
 [package.dependencies]
-jsonpatch = ">=1.33,<2.0"
-langsmith = ">=0.1.75,<0.2.0"
+jsonpatch = "^1.33"
+langsmith = "^0.1.75"
 packaging = ">=23.2,<25"
-pydantic = ">=2,<3"
+pydantic = [
+    {version = ">=1,<3", markers = "python_full_version < \"3.12.4\""},
+    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
+]
 PyYAML = ">=5.3"
-tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<9.0.0"
+tenacity = "^8.1.0,!=8.4.0"
 typing-extensions = ">=4.7"
+
+[package.source]
+type = "git"
+url = "https://github.com/langchain-ai/langchain.git"
+reference = "v0.3rc"
+resolved_reference = "e5aa0f938becf4369e155136d80afebe6b448c30"
+subdirectory = "libs/core"
 
 [[package]]
 name = "langsmith"
@@ -339,8 +347,8 @@ files = [
 httpx = ">=0.23.0,<1"
 orjson = ">=3.9.14,<4.0.0"
 pydantic = [
-    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
     {version = ">=1,<3", markers = "python_full_version < \"3.12.4\""},
+    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
 ]
 requests = ">=2,<3"
 
@@ -528,8 +536,8 @@ files = [
 annotated-types = ">=0.4.0"
 pydantic-core = "2.20.1"
 typing-extensions = [
-    {version = ">=4.12.2", markers = "python_version >= \"3.13\""},
     {version = ">=4.6.1", markers = "python_version < \"3.13\""},
+    {version = ">=4.12.2", markers = "python_version >= \"3.13\""},
 ]
 
 [package.extras]
@@ -945,4 +953,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9.0,<4.0"
-content-hash = "d04f4c96d2e74d1fd8c19eeb1dc8de87c0742abd9f1c89afbe8dcd815c16c4c2"
+content-hash = "1f084f3776c7b165c11c5a263f037eb90bedec90d5ce1c285ae900d5d4dbb121"

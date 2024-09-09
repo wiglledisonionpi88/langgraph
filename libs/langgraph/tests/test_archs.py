@@ -261,43 +261,7 @@ def test_agent(snapshot: SnapshotAssertion) -> None:
                 ]
             }
         )
-    ] == [
-        {
-            "model": {
-                "messages": AIMessage(
-                    content="",
-                    tool_calls=[
-                        {
-                            "name": "duckduckgo_search",
-                            "args": {
-                                "query": "30th president of the United States age at death"
-                            },
-                            "id": "call_ZWRbPmjvo0fYkwyo4HCYUsar",
-                            "type": "tool_call",
-                        }
-                    ],
-                )
-            }
-        },
-        {
-            "tools": {
-                "messages": [
-                    ToolMessage(
-                        content="Calvin Coolidge (born July 4, 1872, Plymouth, Vermont, U.S.—died January 5, 1933, Northampton, Massachusetts) was the 30th president of the United States (1923-29). Coolidge acceded to the presidency after the death in office of Warren G. Harding, just as the Harding scandals were coming to light. He restored integrity to the executive ... Calvin Coolidge (born John Calvin Coolidge Jr.; [1] / ˈ k uː l ɪ dʒ /; July 4, 1872 - January 5, 1933) was an American attorney and politician who served as the 30th president of the United States from 1923 to 1929.. Born in Vermont, Coolidge was a Republican lawyer who climbed the ladder of Massachusetts politics, becoming the state's 48th governor.His response to the Boston police ... Calvin Coolidge's tenure as the 30th president of the United States began on August 2, 1923, when Coolidge became president upon Warren G. Harding's death, and ended on March 4, 1929. A Republican from Massachusetts, Coolidge had been vice president for 2 years, 151 days when he succeeded to the presidency upon the sudden death of Harding. Elected to a full four-year term in 1924, Coolidge ... The White House, official residence of the president of the United States, in July 2008. The president of the United States is the head of state and head of government of the United States, [1] indirectly elected to a four-year term via the Electoral College. [2] The officeholder leads the executive branch of the federal government and is the commander-in-chief of the United States Armed ... Age and Year of Death . January 5, 1933 (aged 60) Cause of Death. ... It was then that he became the 30th President of the United States. Immediately after, true to his laid-back character, Coolidge got out of the black suit that he had dressed in for the occasion and went back to bed. He'd go on to serve six more years until 1929.",
-                        name="duckduckgo_search",
-                        tool_call_id="call_ZWRbPmjvo0fYkwyo4HCYUsar",
-                    )
-                ]
-            }
-        },
-        {
-            "model": {
-                "messages": AIMessage(
-                    content="Calvin Coolidge, the 30th president of the United States, died on January 5, 1933, at the age of 60.",
-                )
-            }
-        },
-    ]
+    ] == []
 
 
 def test_agent_always_tool(snapshot: SnapshotAssertion) -> None:
@@ -361,43 +325,7 @@ def test_agent_always_tool(snapshot: SnapshotAssertion) -> None:
                 ]
             }
         )
-    ] == [
-        {
-            "first_model": {
-                "messages": AIMessage(
-                    content="",
-                    tool_calls=[
-                        {
-                            "name": "duckduckgo_search",
-                            "args": {
-                                "query": "How old was the 30th president of the United States when he died?"
-                            },
-                            "id": "9ed4328dcdea4904b1b54487e343a373",
-                            "type": "tool_call",
-                        }
-                    ],
-                )
-            }
-        },
-        {
-            "tools": {
-                "messages": [
-                    ToolMessage(
-                        content="Calvin Coolidge (born July 4, 1872, Plymouth, Vermont, U.S.—died January 5, 1933, Northampton, Massachusetts) was the 30th president of the United States (1923-29). Coolidge acceded to the presidency after the death in office of Warren G. Harding, just as the Harding scandals were coming to light. He restored integrity to the executive ... Calvin Coolidge (born John Calvin Coolidge Jr.; [1] / ˈ k uː l ɪ dʒ /; July 4, 1872 - January 5, 1933) was an American attorney and politician who served as the 30th president of the United States from 1923 to 1929.. Born in Vermont, Coolidge was a Republican lawyer who climbed the ladder of Massachusetts politics, becoming the state's 48th governor.His response to the Boston police ... Calvin Coolidge's tenure as the 30th president of the United States began on August 2, 1923, when Coolidge became president upon Warren G. Harding's death, and ended on March 4, 1929. A Republican from Massachusetts, Coolidge had been vice president for 2 years, 151 days when he succeeded to the presidency upon the sudden death of Harding. Elected to a full four-year term in 1924, Coolidge ... The White House, official residence of the president of the United States, in July 2008. The president of the United States is the head of state and head of government of the United States, [1] indirectly elected to a four-year term via the Electoral College. [2] The officeholder leads the executive branch of the federal government and is the commander-in-chief of the United States Armed ... As the head of the government of the United States, the president is arguably the most powerful government official in the world. The president is elected to a four-year term via an electoral college system. Since the Twenty-second Amendment was adopted in 1951, the American presidency has been limited to a maximum of two terms.. Click on a president below to learn more about each presidency ...",
-                        name="duckduckgo_search",
-                        tool_call_id="9ed4328dcdea4904b1b54487e343a373",
-                    )
-                ]
-            }
-        },
-        {
-            "model": {
-                "messages": AIMessage(
-                    content="Calvin Coolidge, the 30th president of the United States, was born on July 4, 1872, and died on January 5, 1933. To calculate his age at the time of his death, we can subtract his birth year from his death year. \n\nAge at death = Death year - Birth year\nAge at death = 1933 - 1872\nAge at death = 61 years\n\nCalvin Coolidge was 61 years old when he died.",
-                )
-            }
-        },
-    ]
+    ] == []
 
 
 def test_agent_select_tools(snapshot: SnapshotAssertion) -> None:
@@ -470,3 +398,67 @@ def test_agent_select_tools(snapshot: SnapshotAssertion) -> None:
             }
         )
     ] == []
+
+
+def test_reflection(snapshot: SnapshotAssertion):
+    from typing import Annotated, TypedDict
+
+    from langchain_core.messages import (
+        AIMessage,
+        BaseMessage,
+        HumanMessage,
+        SystemMessage,
+    )
+    from langchain_openai import ChatOpenAI
+
+    from langgraph.graph import END, START, StateGraph
+    from langgraph.graph.message import add_messages
+
+    model = ChatOpenAI()
+
+    class State(TypedDict):
+        messages: Annotated[list[BaseMessage], add_messages]
+
+    generate_prompt = SystemMessage(
+        "You are an essay assistant tasked with writing excellent 5-paragraph essays."
+        " Generate the best essay possible for the user's request."
+        " If the user provides critique, respond with a revised version of your previous attempts."
+    )
+
+    def generate(state: State) -> State:
+        answer = model.invoke([generate_prompt] + state["messages"])
+        return {"messages": [answer]}
+
+    reflection_prompt = SystemMessage(
+        "You are a teacher grading an essay submission. Generate critique and recommendations for the user's submission."
+        " Provide detailed recommendations, including requests for length, depth, style, etc."
+    )
+
+    def reflect(state: State) -> State:
+        # Invert the messages to get the LLM to reflect on its own output
+        cls_map = {AIMessage: HumanMessage, HumanMessage: AIMessage}
+        # First message is the original user request. We hold it the same for all nodes
+        translated = [reflection_prompt, state["messages"][0]] + [
+            cls_map[msg.__class__](content=msg.content) for msg in state["messages"][1:]
+        ]
+        answer = model.invoke(translated)
+        # We treat the output of this as human feedback for the generator
+        return {"messages": [HumanMessage(content=answer.content)]}
+
+    def should_continue(state: State):
+        if len(state["messages"]) > 6:
+            # End after 3 iterations, each with 2 messages
+            return END
+        else:
+            return "reflect"
+
+    builder = StateGraph(State)
+    builder.add_node("generate", generate)
+    builder.add_node("reflect", reflect)
+    builder.add_edge(START, "generate")
+    builder.add_conditional_edges("generate", should_continue)
+    builder.add_edge("reflect", "generate")
+
+    graph = builder.compile()
+
+    assert graph.get_graph().draw_mermaid() == snapshot

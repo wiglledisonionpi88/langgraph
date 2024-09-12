@@ -401,64 +401,77 @@ def test_agent_select_tools(snapshot: SnapshotAssertion) -> None:
 
 
 def test_reflection(snapshot: SnapshotAssertion):
-    from typing import Annotated, TypedDict
+from typing import Annotated, TypedDict
 
-    from langchain_core.messages import (
-        AIMessage,
-        BaseMessage,
-        HumanMessage,
-        SystemMessage,
-    )
-    from langchain_openai import ChatOpenAI
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+)
+from langchain_openai import ChatOpenAI
 
-    from langgraph.graph import END, START, StateGraph
-    from langgraph.graph.message import add_messages
+from langgraph.graph import END, START, StateGraph
+from langgraph.graph.message import add_messages
 
-    model = ChatOpenAI()
+model = ChatOpenAI()
 
-    class State(TypedDict):
-        messages: Annotated[list[BaseMessage], add_messages]
+class State(TypedDict):
+    messages: Annotated[list[BaseMessage], add_messages]
 
-    generate_prompt = SystemMessage(
-        "You are an essay assistant tasked with writing excellent 5-paragraph essays."
-        " Generate the best essay possible for the user's request."
-        " If the user provides critique, respond with a revised version of your previous attempts."
-    )
+generate_prompt = SystemMessage(
+    "You are an essay assistant tasked with writing excellent 3-paragraph essays."
+    " Generate the best essay possible for the user's request."
+    " If the user provides critique, respond with a revised version of your previous attempts."
+)
 
-    def generate(state: State) -> State:
-        answer = model.invoke([generate_prompt] + state["messages"])
-        return {"messages": [answer]}
+def generate(state: State) -> State:
+    answer = model.invoke([generate_prompt] + state["messages"])
+    return {"messages": [answer]}
 
-    reflection_prompt = SystemMessage(
-        "You are a teacher grading an essay submission. Generate critique and recommendations for the user's submission."
-        " Provide detailed recommendations, including requests for length, depth, style, etc."
-    )
+reflection_prompt = SystemMessage(
+    "You are a teacher grading an essay submission. Generate critique and recommendations for the user's submission."
+    " Provide detailed recommendations, including requests for length, depth, style, etc."
+)
 
-    def reflect(state: State) -> State:
-        # Invert the messages to get the LLM to reflect on its own output
-        cls_map = {AIMessage: HumanMessage, HumanMessage: AIMessage}
-        # First message is the original user request. We hold it the same for all nodes
-        translated = [reflection_prompt, state["messages"][0]] + [
-            cls_map[msg.__class__](content=msg.content) for msg in state["messages"][1:]
-        ]
-        answer = model.invoke(translated)
-        # We treat the output of this as human feedback for the generator
-        return {"messages": [HumanMessage(content=answer.content)]}
+def reflect(state: State) -> State:
+    # Invert the messages to get the LLM to reflect on its own output
+    cls_map = {AIMessage: HumanMessage, HumanMessage: AIMessage}
+    # First message is the original user request. We hold it the same for all nodes
+    translated = [reflection_prompt, state["messages"][0]] + [
+        cls_map[msg.__class__](content=msg.content) for msg in state["messages"][1:]
+    ]
+    answer = model.invoke(translated)
+    # We treat the output of this as human feedback for the generator
+    return {"messages": [HumanMessage(content=answer.content)]}
 
-    def should_continue(state: State):
-        if len(state["messages"]) > 6:
-            # End after 3 iterations, each with 2 messages
-            return END
-        else:
-            return "reflect"
+def should_continue(state: State):
+    if len(state["messages"]) > 6:
+        # End after 3 iterations, each with 2 messages
+        return END
+    else:
+        return "reflect"
 
-    builder = StateGraph(State)
-    builder.add_node("generate", generate)
-    builder.add_node("reflect", reflect)
-    builder.add_edge(START, "generate")
-    builder.add_conditional_edges("generate", should_continue)
-    builder.add_edge("reflect", "generate")
+builder = StateGraph(State)
+builder.add_node("generate", generate)
+builder.add_node("reflect", reflect)
+builder.add_edge(START, "generate")
+builder.add_conditional_edges("generate", should_continue)
+builder.add_edge("reflect", "generate")
 
-    graph = builder.compile()
+graph = builder.compile()
 
     assert graph.get_graph().draw_mermaid() == snapshot
+
+    assert [
+        c
+        for c in graph.stream(
+            {
+                "messages": [
+                    HumanMessage(
+                        "Generate an essay on the topicality of The Little Prince and its message in modern life"
+                    )
+                ]
+            }
+        )
+    ] == []

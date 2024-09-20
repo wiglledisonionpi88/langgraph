@@ -148,8 +148,7 @@ def create_react_agent(
         state_schema: An optional state schema that defines graph state.
             Must have `messages` and `is_last_step` keys.
             Defaults to `AgentState` that defines those two keys.
-        messages_modifier: An optional
-            messages modifier. This applies to messages BEFORE they are passed into the LLM.
+        messages_modifier: Deprecated function to transform messages BEFORE they are passed into the LLM.
 
             Can take a few different forms:
 
@@ -158,9 +157,10 @@ def create_react_agent(
             - Callable: This function should take in a list of messages and the output is then passed to the language model.
             - Runnable: This runnable should take in a list of messages and the output is then passed to the language model.
             !!! Warning
-                `messages_modifier` parameter is deprecated as of version 0.1.9 and will be removed in 0.2.0
-        state_modifier: An optional
-            state modifier. This takes full graph state BEFORE the LLM is called and prepares the input to LLM.
+                `messages_modifier` parameter is deprecated as of version 0.1.9 and will be removed in 0.3.0. Use `state_modifier` instead.
+        state_modifier: Transform the state into a list of messages for the LLM.
+
+            This takes full graph state BEFORE the LLM is called and prepares the input to LLM.
 
             Can take a few different forms:
 

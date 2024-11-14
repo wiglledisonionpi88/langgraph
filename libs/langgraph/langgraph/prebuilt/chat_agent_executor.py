@@ -733,7 +733,7 @@ def make_agent_node(
     model: LanguageModelLike,
     tools: Union[Sequence[BaseTool], ToolNode],
     *,
-    state_schema: Optional[StateSchemaType] = ActiveAgentState,
+    state_schema: Optional[StateSchemaType] = None,
     # TODO: should these be on the level of messages or on the level of the full state?
     input_processor: Callable[[dict], dict] = None,
     output_processor: Callable[[dict], dict] = None,

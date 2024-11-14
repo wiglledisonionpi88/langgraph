@@ -6,7 +6,12 @@ from langgraph.graph import GraphCommand
 
 
 class HandoffTool(StructuredTool):
-    ...
+    hand_off_to: str
+
+    @classmethod
+    def from_function(cls, hand_off_to: str, *args, **kwargs):
+        kwargs["hand_off_to"] = hand_off_to
+        return super().from_function(*args, **kwargs)
 
 
 def create_handoff_tool(
@@ -26,6 +31,7 @@ def create_handoff_tool(
         name = hand_off_to
 
     transfer_tool = HandoffTool.from_function(
+        hand_off_to,
         func,
         name=name,
         description=description,
@@ -33,5 +39,4 @@ def create_handoff_tool(
         args_schema=None,
         infer_schema=True,
     )
-    transfer_tool.metadata = {"hand_off_to": hand_off_to}
     return transfer_tool

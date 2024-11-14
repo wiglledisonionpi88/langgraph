@@ -1,23 +1,18 @@
-from typing import Optional
+from typing import Literal, Optional
 
 from langchain_core.tools import StructuredTool
 
 from langgraph.graph import GraphCommand
 
 
-class HandoffTool(StructuredTool):
-    goto: str
-
-    @classmethod
-    def from_function(cls, goto: str, *args, **kwargs):
-        kwargs["goto"] = goto
-        return super().from_function(*args, **kwargs)
+class GraphCommandTool(StructuredTool):
+    command: GraphCommand
 
 
 def create_handoff_tool(
     goto: str, name: Optional[str] = None, description: Optional[str] = None
-) -> HandoffTool:
-    """Create a tool that can hand off control to another node / agent."""
+) -> GraphCommandTool:
+    """Create a tool that can hand off control to another node."""
 
     def func():
         return f"Transferred to '{goto}'!", GraphCommand(goto=goto)
@@ -28,9 +23,10 @@ def create_handoff_tool(
     if name is None:
         name = goto
 
-    transfer_tool = HandoffTool.from_function(
-        goto,
+    command = GraphCommand(goto=goto)
+    transfer_tool = GraphCommandTool.from_function(
         func,
+        command=command,
         name=name,
         description=description,
         response_format="content_and_artifact",

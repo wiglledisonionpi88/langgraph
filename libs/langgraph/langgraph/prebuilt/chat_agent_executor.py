@@ -12,10 +12,11 @@ from typing_extensions import Annotated, TypedDict
 
 from langgraph._api.deprecation import deprecated_parameter
 from langgraph.errors import ErrorCode, create_error_message
-from langgraph.graph import StateGraph
+from langgraph.graph import END, START, GraphCommand, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from langgraph.graph.message import add_messages
 from langgraph.managed import IsLastStep, RemainingSteps
+from langgraph.prebuilt.handoff import GraphCommandTool
 from langgraph.prebuilt.tool_executor import ToolExecutor
 from langgraph.prebuilt.tool_node import ToolNode
 from langgraph.store.base import BaseStore
@@ -682,6 +683,109 @@ def create_react_agent(
         interrupt_after=interrupt_after,
         debug=debug,
     )
+
+
+def add_entrypoint_router(
+    graph: StateGraph,
+    *,
+    route_to: Sequence[tuple[str, CompiledGraph]],
+    default_start_node: str,
+) -> StateGraph:
+    """Add an entrypoint conditional edge router to the graph.
+
+    Args:
+        graph: The graph to add the router to.
+        route_to: A list of tuples where the first element is the name of the graph to route to
+                and the second element is the graph to route to.
+        default_start_graph: The name of the default route to use on the first interaction.
+
+    Returns:
+        The graph with the router added.
+    """
+    channels = graph.schemas[graph.schema]
+    if "node" not in channels:
+        raise ValueError("Graph must have a 'node' channel")
+
+    node_names = [name for name, _ in route_to]
+
+    if default_start_node not in node_names:
+        raise ValueError(
+            f"Default route '{default_start_node}' not found in routes {node_names}"
+        )
+
+    def router(state) -> Literal[*node_names]:  # type: ignore
+        """Router node that determines where to go next."""
+        return state.get("node", default_start_node)
+
+    graph.add_conditional_edges(START, router)
+
+    for name, node in route_to:
+        graph.add_node(name, node)
+
+    return graph
+
+
+class ActiveAgentState(AgentState):
+    node: str
+
+
+def make_agent_node(
+    model: LanguageModelLike,
+    tools: Union[Sequence[BaseTool], ToolNode],
+    *,
+    state_schema: Optional[StateSchemaType] = ActiveAgentState,
+    # TODO: should these be on the level of messages or on the level of the full state?
+    input_processor: Callable[[dict], dict] = None,
+    output_processor: Callable[[dict], dict] = None,
+    **agent_kwargs,
+):
+    """Create an agent node that calls the language model and tools."""
+    agent = create_react_agent(
+        model,
+        tools,
+        state_schema=state_schema or ActiveAgentState,
+        **(agent_kwargs or {}),
+    )
+
+    destinations = [
+        tool.command.goto
+        for tool in tools
+        if isinstance(tool, GraphCommandTool) and tool.command.goto is not None
+    ]
+    # TODO: this is annoying, cause in the case of supervisor, we don't necessarily
+    # want individual agents to return to the user. we might need to require a special param
+    # like 'return_direct', and force the agent to loop again and call a transfer tool.
+    # in practice, below logic is sufficient for implementing supervisor pattern, it just
+    # doesn't give any guarantees about actually transferring back to supervisor.
+    destinations.append(END)
+
+    # TODO: any way we can add state schema annotation here? maybe dynamically via __annotations__?
+    def agent_node(state: dict) -> GraphCommand[Literal[*destinations]]:  # type: ignore
+        """Agent node that calls the language model and tools."""
+        inputs = input_processor(state) if input_processor else state
+        response = agent.invoke(inputs)
+        last_message = response["messages"][-1]
+        outputs = output_processor(response) if output_processor else response
+        # Check if the last message from the agent is a tool message with an artifact:
+        if isinstance(last_message, ToolMessage) and isinstance(
+            last_message.artifact, GraphCommand
+        ):
+            goto = last_message.artifact.goto
+            tool_state_update = last_message.artifact.update or {}
+
+            if "messages" in tool_state_update:
+                raise ValueError("Messages cannot be updated by a GraphCommand")
+
+            # combine with the state updates from the tools
+            outputs.update(tool_state_update)
+            if goto is not None:
+                outputs["node"] = goto
+
+            return GraphCommand(update=outputs, goto=goto)
+
+        return outputs
+
+    return agent_node
 
 
 # Keep for backwards compatibility

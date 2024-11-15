@@ -7,15 +7,17 @@ from langgraph.graph import GraphCommand
 
 class GraphCommandTool(StructuredTool):
     command: GraphCommand
+    response_format: Literal["content_and_artifact"] = "content_and_artifact"
 
 
 def create_handoff_tool(
     goto: str, name: Optional[str] = None, description: Optional[str] = None
 ) -> GraphCommandTool:
     """Create a tool that can hand off control to another node."""
+    command = GraphCommand(goto=goto)
 
     def func():
-        return f"Transferred to '{goto}'!", GraphCommand(goto=goto)
+        return f"Transferred to '{goto}'!", command
 
     if description is None:
         description = f"Transfer to '{goto}'. Do not ask any details."
@@ -23,7 +25,6 @@ def create_handoff_tool(
     if name is None:
         name = goto
 
-    command = GraphCommand(goto=goto)
     transfer_tool = GraphCommandTool.from_function(
         func,
         command=command,

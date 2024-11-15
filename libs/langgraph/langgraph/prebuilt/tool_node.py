@@ -228,7 +228,8 @@ class ToolNode(RunnableCallable):
             if not isinstance(output.artifact, GraphCommand):
                 continue
 
-            for k, v in output.artifact.update.items():
+            tool_state_update = output.artifact.update or {}
+            for k, v in tool_state_update.items():
                 if k == self.messages_key:
                     raise ValueError(
                         "Cannot return state updates for the messages key."

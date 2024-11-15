@@ -747,20 +747,8 @@ def make_agent_node(
         **(agent_kwargs or {}),
     )
 
-    destinations = [
-        tool.command.goto
-        for tool in tools
-        if isinstance(tool, GraphCommandTool) and tool.command.goto is not None
-    ]
-    # TODO: this is annoying, cause in the case of supervisor, we don't necessarily
-    # want individual agents to return to the user. we might need to require a special param
-    # like 'return_direct', and force the agent to loop again and call a transfer tool.
-    # in practice, below logic is sufficient for implementing supervisor pattern, it just
-    # doesn't give any guarantees about actually transferring back to supervisor.
-    destinations.append(END)
-
     # TODO: any way we can add state schema annotation here? maybe dynamically via __annotations__?
-    def agent_node(state: dict) -> GraphCommand[Literal[*destinations]]:  # type: ignore
+    def agent_node(state: dict):
         """Agent node that calls the language model and tools."""
         inputs = input_processor(state) if input_processor else state
         response = agent.invoke(inputs)
@@ -780,8 +768,6 @@ def make_agent_node(
             outputs.update(tool_state_update)
             if goto is not None:
                 outputs["node"] = goto
-
-            return GraphCommand(update=outputs, goto=goto)
 
         return outputs
 

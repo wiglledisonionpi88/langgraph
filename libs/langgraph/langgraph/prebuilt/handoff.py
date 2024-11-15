@@ -8,6 +8,7 @@ from langgraph.graph import GraphCommand
 class GraphCommandTool(StructuredTool):
     command: GraphCommand
     response_format: Literal["content_and_artifact"] = "content_and_artifact"
+    return_direct: Literal[True] = True
 
 
 def create_handoff_tool(

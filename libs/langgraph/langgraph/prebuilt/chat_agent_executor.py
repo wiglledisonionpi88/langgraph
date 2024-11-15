@@ -734,7 +734,6 @@ def make_agent_node(
     tools: Union[Sequence[BaseTool], ToolNode],
     *,
     state_schema: Optional[StateSchemaType] = None,
-    # TODO: should these be on the level of messages or on the level of the full state?
     input_processor: Callable[[dict], dict] = None,
     output_processor: Callable[[dict], dict] = None,
     **agent_kwargs,
@@ -766,7 +765,7 @@ def make_agent_node(
 
             # combine with the state updates from the tools
             outputs.update(tool_state_update)
-            if goto is not None:
+            if goto:
                 outputs["node"] = goto
 
         return outputs

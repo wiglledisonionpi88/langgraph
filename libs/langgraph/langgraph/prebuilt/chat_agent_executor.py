@@ -725,7 +725,7 @@ def add_entrypoint_router(
     return graph
 
 
-class ActiveAgentState(AgentState):
+class AgentRouterState(AgentState):
     node: str
 
 
@@ -743,7 +743,7 @@ def make_agent_node(
     agent = create_react_agent(
         model,
         tools,
-        state_schema=state_schema or ActiveAgentState,
+        state_schema=state_schema or AgentRouterState,
         **(agent_kwargs or {}),
     )
 

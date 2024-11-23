@@ -38,6 +38,7 @@ from langchain_core.tools.base import get_all_basemodel_annotations
 from typing_extensions import Annotated, get_args, get_origin
 
 from langgraph.errors import GraphBubbleUp
+from langgraph.graph import GraphCommand
 from langgraph.store.base import BaseStore
 from langgraph.utils.runnable import RunnableCallable
 
@@ -221,6 +222,20 @@ class ToolNode(RunnableCallable):
         config_list = get_config_list(config, len(tool_calls))
         with get_executor_for_config(config) as executor:
             outputs = [*executor.map(self._run_one, tool_calls, config_list)]
+
+        graph_commands: list[GraphCommand] = [
+            output for output in outputs if isinstance(output, GraphCommand)
+        ]
+        if len(graph_commands) > 1:
+            raise ValueError(
+                "Currently only one GraphCommand update per ToolNode is supported, got multiple GraphCommands."
+            )
+
+        if len(graph_commands) == 1:
+            if len(outputs) > 1:
+                raise ValueError("Cannot mix GraphCommand returns with ToolMessages.")
+            else:
+                return graph_commands[0]
         # TypedDict, pydantic, dataclass, etc. should all be able to load from dict
         return outputs if output_type == "list" else {self.messages_key: outputs}
 
@@ -261,10 +276,27 @@ class ToolNode(RunnableCallable):
             return invalid_tool_message
 
         try:
+            # TODO: why is tool_call type automatically injected in AIMessage?
+            call.pop("type", None)
             input = {**call, **{"type": "tool_call"}}
-            tool_message: ToolMessage = self.tools_by_name[call["name"]].invoke(
-                input, config
-            )
+            # check if the tool returns a GraphCommand in the type annotation
+            tool = self.tools_by_name[call["name"]]
+            if (return_type := tool.func.__annotations__.get("return")) and (
+                return_type is GraphCommand or get_origin(return_type) is GraphCommand
+            ):
+                # invoke with the raw tool call to return a GraphCommand directly
+                graph_command: GraphCommand = tool.invoke(call)
+                state_update = graph_command.update or {}
+                messages_update = state_update.get(self.messages_key, [])
+                for message in messages_update:
+                    # set tool call ID & name
+                    if isinstance(message, ToolMessage):
+                        message.name = call["name"]
+                        message.tool_call_id = call["id"]
+                return graph_command
+            else:
+                # invoke with the full input to return a ToolMessage
+                tool_message: ToolMessage = tool.invoke(input, config)
             tool_message.content = cast(
                 Union[str, list], msg_content_output(tool_message.content)
             )

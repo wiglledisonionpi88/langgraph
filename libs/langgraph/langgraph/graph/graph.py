@@ -398,7 +398,9 @@ class Graph:
         # validate targets
         for node in self.nodes:
             if node not in all_targets:
-                raise ValueError(f"Node `{node}` is not reachable")
+                # TODO: how to we handle GraphCommand annotations properly here?
+                # raise ValueError(f"Node `{node}` is not reachable")
+                pass
         for target in all_targets:
             if target not in self.nodes and target != END:
                 raise ValueError(f"Found edge ending at unknown node `{target}`")

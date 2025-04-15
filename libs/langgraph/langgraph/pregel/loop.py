@@ -210,13 +210,13 @@ class PregelLoop(LoopProtocol):
         specs: Mapping[str, Union[BaseChannel, ManagedValueSpec]],
         output_keys: Union[str, Sequence[str]],
         stream_keys: Union[str, Sequence[str]],
+        trigger_to_nodes: Mapping[str, Sequence[str]],
         interrupt_after: Union[All, Sequence[str]] = EMPTY_SEQ,
         interrupt_before: Union[All, Sequence[str]] = EMPTY_SEQ,
         manager: Union[None, AsyncParentRunManager, ParentRunManager] = None,
         input_model: Optional[Type[BaseModel]] = None,
         debug: bool = False,
         migrate_checkpoint: Optional[Callable[[Checkpoint], None]] = None,
-        trigger_to_nodes: Optional[Mapping[str, Sequence[str]]] = None,
         checkpoint_during: bool = True,
     ) -> None:
         super().__init__(
@@ -953,6 +953,7 @@ class SyncPregelLoop(PregelLoop, ContextManager):
         checkpointer: Optional[BaseCheckpointSaver],
         nodes: Mapping[str, PregelNode],
         specs: Mapping[str, Union[BaseChannel, ManagedValueSpec]],
+        trigger_to_nodes: Mapping[str, Sequence[str]],
         manager: Union[None, AsyncParentRunManager, ParentRunManager] = None,
         interrupt_after: Union[All, Sequence[str]] = EMPTY_SEQ,
         interrupt_before: Union[All, Sequence[str]] = EMPTY_SEQ,
@@ -961,7 +962,6 @@ class SyncPregelLoop(PregelLoop, ContextManager):
         input_model: Optional[Type[BaseModel]] = None,
         debug: bool = False,
         migrate_checkpoint: Optional[Callable[[Checkpoint], None]] = None,
-        trigger_to_nodes: Optional[Mapping[str, Sequence[str]]] = None,
         checkpoint_during: bool = True,
     ) -> None:
         super().__init__(
@@ -1103,6 +1103,7 @@ class AsyncPregelLoop(PregelLoop, AsyncContextManager):
         checkpointer: Optional[BaseCheckpointSaver],
         nodes: Mapping[str, PregelNode],
         specs: Mapping[str, Union[BaseChannel, ManagedValueSpec]],
+        trigger_to_nodes: Mapping[str, Sequence[str]],
         interrupt_after: Union[All, Sequence[str]] = EMPTY_SEQ,
         interrupt_before: Union[All, Sequence[str]] = EMPTY_SEQ,
         manager: Union[None, AsyncParentRunManager, ParentRunManager] = None,
@@ -1111,7 +1112,6 @@ class AsyncPregelLoop(PregelLoop, AsyncContextManager):
         input_model: Optional[Type[BaseModel]] = None,
         debug: bool = False,
         migrate_checkpoint: Optional[Callable[[Checkpoint], None]] = None,
-        trigger_to_nodes: Optional[Mapping[str, Sequence[str]]] = None,
         checkpoint_during: bool = True,
     ) -> None:
         super().__init__(

@@ -576,6 +576,13 @@ def dockerfile(save_path: str, config: pathlib.Path, add_docker_compose: bool) -
     "dev",
     help="🏃‍♀️‍➡️ Run LangGraph API server in development mode with hot reloading and debugging support",
 )
+@click.argument(
+    "--server-level",
+    type=click.Choice(["ERROR", "WARNING", "INFO", "DEBUG", "TRACE"]),
+    default="WARNING",
+    help="Set the logging level for the server. Default: WARNING",
+)
+@click.argument("options", nargs=-1, type=click.UNPROCESSED)
 @log_command
 def dev(
     host: str,
@@ -588,7 +595,50 @@ def dev(
     wait_for_client: bool,
     studio_url: Optional[str],
     allow_blocking: bool,
+    server_level: str,
+    options: tuple,
 ):
+    """CLI entrypoint for running the LangGraph API server."""
+
+    def parse_passthrough_args(options_tuple):
+        args = {}
+        i = 0
+        while i < len(options_tuple):
+            opt = options_tuple[i]
+            if opt.startswith("--"):
+                key = opt.lstrip("-")
+                # If next item is not another flag, treat as value
+                if i + 1 < len(options_tuple) and not options_tuple[i + 1].startswith(
+                    "-"
+                ):
+                    args[key] = options_tuple[i + 1]
+                    i += 2
+                else:
+                    args[key] = True
+                    i += 1
+            elif opt.startswith("-") and len(opt) > 1:
+                # Support short flags: -b or -abc (multiple flags)
+                shorts = opt.lstrip("-")
+                if len(shorts) > 1:
+                    for c in shorts:
+                        args[c] = True
+                    i += 1
+                else:
+                    key = shorts
+                    if i + 1 < len(options_tuple) and not options_tuple[
+                        i + 1
+                    ].startswith("-"):
+                        args[key] = options_tuple[i + 1]
+                        i += 2
+                    else:
+                        args[key] = True
+                        i += 1
+            else:
+                i += 1
+        return args
+
+    passthrough_args = parse_passthrough_args(options)
+
     """CLI entrypoint for running the LangGraph API server."""
     try:
         from langgraph_api.cli import run_server  # type: ignore
@@ -655,6 +705,8 @@ def dev(
         ui_config=config_json.get("ui_config"),
         studio_url=studio_url,
         allow_blocking=allow_blocking,
+        server_level=server_level,
+        **passthrough_args,
     )
 
 

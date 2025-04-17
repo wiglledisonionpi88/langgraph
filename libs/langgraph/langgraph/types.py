@@ -378,6 +378,7 @@ class PregelScratchpad:
     interrupt_counter: Callable[[], int]
     get_null_resume: Callable[[bool], Any]
     resume: list[Any]
+    resumes_map: Optional[dict[str, Any]]
     # subgraph
     subgraph_counter: Callable[[], int]
 

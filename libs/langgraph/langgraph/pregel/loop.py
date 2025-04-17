@@ -48,6 +48,7 @@ from langgraph.constants import (
     CONFIG_KEY_DEDUPE_TASKS,
     CONFIG_KEY_DELEGATE,
     CONFIG_KEY_ENSURE_LATEST,
+    CONFIG_KEY_RESUME_MAP,
     CONFIG_KEY_RESUMING,
     CONFIG_KEY_SCRATCHPAD,
     CONFIG_KEY_STREAM,
@@ -650,6 +651,9 @@ class PregelLoop(LoopProtocol):
 
         # map command to writes
         if isinstance(self.input, Command):
+            if self.input.resume_map:
+                self.config[CONF][CONFIG_KEY_RESUME_MAP] = self.input.resume_map
+
             if self.input.resume is not None and not self.checkpointer:
                 raise RuntimeError(
                     "Cannot use Command(resume=...) without checkpointer"

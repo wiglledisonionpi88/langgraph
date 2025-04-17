@@ -42,6 +42,7 @@ from langgraph.constants import (
     CONFIG_KEY_CHECKPOINTER,
     CONFIG_KEY_PREVIOUS,
     CONFIG_KEY_READ,
+    CONFIG_KEY_RESUME_MAP,
     CONFIG_KEY_SCRATCHPAD,
     CONFIG_KEY_SEND,
     CONFIG_KEY_STORE,
@@ -590,9 +591,11 @@ def prepare_single_task(
                         CONFIG_KEY_CHECKPOINT_ID: None,
                         CONFIG_KEY_CHECKPOINT_NS: task_checkpoint_ns,
                         CONFIG_KEY_SCRATCHPAD: _scratchpad(
+                            config[CONF].get(CONFIG_KEY_RESUME_MAP),
                             config[CONF].get(CONFIG_KEY_SCRATCHPAD),
                             pending_writes,
                             task_id,
+                            task_checkpoint_ns,
                         ),
                     },
                 ),
@@ -874,9 +877,11 @@ def _triggers(
 
 
 def _scratchpad(
+    resume_map: Optional[dict[str, Any]],
     parent_scratchpad: Optional[PregelScratchpad],
     pending_writes: list[PendingWrite],
     task_id: str,
+    namespace: str,
 ) -> PregelScratchpad:
     if len(pending_writes) > 0:
         # find global resume value
@@ -888,6 +893,14 @@ def _scratchpad(
             # None cannot be used as a resume value, because it would be difficult to
             # distinguish from missing when used over http
             null_resume_write = None
+
+        # find task-specific resume value
+        if parent_scratchpad is not None and parent_scratchpad.resumes_map:
+            if namespace in parent_scratchpad.resumes_map:
+                task_resume_write = parent_scratchpad.resumes_map[namespace]
+                if not isinstance(task_resume_write, list):
+                    task_resume_write = [task_resume_write]
+
         # find task-specific resume value
         for w in pending_writes:
             if w[0] == task_id and w[1] == RESUME:
